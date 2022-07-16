@@ -1,70 +1,295 @@
-# Getting Started with Create React App
+<div align="center">
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# create-react-app-typescript-cypress-unit-integration-tests-setup
 
-## Available Scripts
+Running unit & integration tests with **[Cypress](https://docs.cypress.io/guides/component-testing/introduction)** in a
+**[TypeScript](https://github.com/microsoft/TypeScript)** **[React](https://github.com/facebook/react)** project based on
+**[create-react-app](https://github.com/facebook/create-react-app)**.
 
-In the project directory, you can run:
+</div>
 
-### `npm start`
+<br><br><br>
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## How to setup Cypress for unit & integration tests
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+This project is an example React application that uses
+**[Cypress Component Testing](https://docs.cypress.io/guides/component-testing/introduction)** for the organization, writing and execution
+of unit / integration tests. You can clone it and play around with it (see **[Commands](#commands)**). The following sub-chapters explain
+how to setup Cypress Component Testing in a `create-react-app` project, including code coverage output and support for the
+**[Testing Library](https://testing-library.com/docs/cypress-testing-library/intro)**.
 
-### `npm test`
+<br>
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 1. Update dependencies
 
-### `npm run build`
+First of all, we need a few new dependencies. In particular:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- Cypress itself (`cypress`)
+- Compatibility with Create React App (`@cypress/react`, `@cypress/webpack-dev-server`, `html-webpack-plugin`)
+- Support for code coverage (`@cypress/code-coverage`, `@cypress/instrument-cra`)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Add all those dependencies to your `package.json` file, remove all Jest-related dependencies, and re-install them. For example:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```diff
+  {
+    "devDependencies": {
+-     "@testing-library/jest-dom": "5.14.x",
+-     "@testing-library/react": "12.0.x",
+-     "@testing-library/user-event": "13.2.x",
+-     "@types/jest": "26.0.x",
++     "@cypress/code-coverage": "3.9.x",
++     "@cypress/instrument-cra": "1.4.x",
++     "@cypress/react": "5.9.x",
++     "@cypress/webpack-dev-server": "1.5.x",
++     "cypress": "8.3.x",
++     "html-webpack-plugin": "4.5.x",
+    }
+  }
+```
 
-### `npm run eject`
+<br>
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 2. Remove Jest setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+You might find an ESLint configuration in your `package.json` file. If so, remove any Jest-related options from it. For example:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```diff
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+-     "react-app/jest"
+    ]
+  },
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+In addition, the `setupTests.ts` file within the `src` folder is also no longer required and can be deleted. For example:
 
-## Learn More
+```diff
+- // jest-dom adds custom jest matchers for asserting on DOM nodes.
+- // allows you to do things like:
+- // expect(element).toHaveTextContent(/react/i)
+- // learn more: https://github.com/testing-library/jest-dom
+- import '@testing-library/jest-dom';
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+<br>
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 3. Setup Cypress
 
-### Code Splitting
+#### 3.1 Update scripts
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+First, let's change our test scripts to use Cypress instead of Jest. Within the root folder, update your `package.json` file:
 
-### Analyzing the Bundle Size
+```diff
+  {
+    "scripts": {
+-     "test": "react-scripts test",
++     "test": "cypress run-ct"
++     "test:runner": "cypress open-ct"
+    }
+  }
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+In detail:
 
-### Making a Progressive Web App
+- The `test` script executes all tests in headless mode - optimal for CI systems
+- The `test:runner` script opens up the Cypress Test Runner and let's you choose specific tests to run - perfect for local development and
+  debugging
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+> Note: Watching test files and re-executing tests only works with the `test:runner` script, and is enabeld by default
+> (**[cypress#3665](https://github.com/cypress-io/cypress/issues/3665)**).
 
-### Advanced Configuration
+#### 3.2 Configure TypeScript
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Now, we want to enable type safety & type support for our Cypress tests. Within the root folder, extend your `tsconfig.json` file:
 
-### Deployment
+```diff
+  {
+    "compilerOptions": {
++     "types": ["cypress"]
+    }
+  }
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+#### 3.3 Configure Cypress
 
-### `npm run build` fails to minify
+First, we need to do some basic Cypress configuration, such as where to find unit / integration tests or how to run them.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Within the root folder, create a file named `cypress.json` and add the following content:
+
+```diff
++ {
++   "testFiles": "**/*.test.{ts,tsx}",
++   "componentFolder": "src",
++   "video": false
++ }
+```
+
+Then, we need to configure Cypress to use the same dev server (Webpack) configuration that Create React App uses, and also to collect and
+save code coverage.
+
+Within the folder `cypress/plugins`, create a file named `index.ts` and add the following content:
+
+```diff
++ /// <reference types="cypress" />
++
++ import injectDevServer from '@cypress/react/plugins/react-scripts';
++ import installCoverageTask from '@cypress/code-coverage/task';
++ import '@cypress/instrument-cra';
++
++ const pluginConfig: Cypress.PluginConfig = (on, config) => {
++   if (config.testingType === 'component') {
++     injectDevServer(on, config);
++   }
++   installCoverageTask(on, config);
++   return config;
++ };
++
++ export default pluginConfig;
+```
+
+Within the folder `cypress/support`, create a file named `index.ts` and add the following content:
+
+```diff
++ /// <reference types="cypress" />
++
++ import '@cypress/code-coverage/support'
+```
+
+#### 3.4 Extend gitignore
+
+Cypress has its own directory structure and output formats. Within your root folder, extend the `.gitignore` to exclude them:
+
+```diff
+  # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+  # dependencies
+  /node_modules
+  /.pnp
+  .pnp.js
+
+  # testing
+  /coverage
++ /.nyc_output
++ cypress/results/*
++ cypress/reports/*
++ cypress/screenshots/*
++ cypress/videos/*
+
+  # production
+  /build
+
+  # misc
+  .DS_Store
+  .env.local
+  .env.development.local
+  .env.test.local
+  .env.production.local
+
+  npm-debug.log*
+  yarn-debug.log*
+  yarn-error.log*
+```
+
+<br>
+
+### 4. Rewrite tests (unit / integration)
+
+Mounting test setups and asserting expectations works similarly between Cypress and Jest, but uses a different syntax. For example, the
+`App.test.tsx` requires the following changes:
+
+```diff
+- import { render, screen } from '@testing-library/react';
++ import { mount } from '@cypress/react'
+  import App from './App';
+
+- test('renders learn react link', () => {
++ it('renders learn react link', () => {
+-   render(<App />);
++   mount(<App >);
+
+-   const linkElement = screen.getByText(/learn react/i);
++   cy.get('a').should('exist');
+  });
+```
+
+<br><br><br>
+
+## Bonus: How to use the **[Testing Library](https://testing-library.com/docs/cypress-testing-library/intro)**
+
+The **[Testing Library](https://testing-library.com/)** is very popuplar within the React community, and these days is also available for
+various other frameworks and libraries - amongst them Cypress. The following sub-chapters explain how to set it all up.
+
+<br>
+
+### 1. Install dependencies
+
+Add the dependency to your `package.json` file and install it. For example:
+
+```diff
+  {
+    "devDependencies": {
++     "@testing-library/cypress": "8.0.x",
+    }
+  }
+```
+
+<br>
+
+### 2. Configure Cypress
+
+#### 2.1 Configure TypeScript
+
+Within the root folder, extend your `tsconfig.json` file:
+
+```diff
+  {
+    "compilerOptions": {
+-     "types": ["cypress"]
++     "types": ["cypress", "@testing-library/cypress"]
+    }
+  }
+```
+
+#### 2.2. Configure Cypress
+
+Within the folder `cypress/support`, open the `index.ts` file and add Testing Library commands:
+
+```diff
+  /// <reference types="cypress" />
+
+  import '@cypress/code-coverage/support'
++ import '@testing-library/cypress/add-commands';
+```
+
+<br>
+
+### 3. Rewrite tests (unit & integration)
+
+You can now switch from the Cypress queries to Testing Library ones. For example, the `App.test.tsx` can now be changed the following way:
+
+```diff
+  import { screen } from '@testing-library/react';
+  import { mount } from '@cypress/react'
+  import App from './App';
+
+  it('renders learn react link', () => {
+    mount(<App >);
+
+-   cy.get('a').should('exist');
++   cy.findByText(/learn react/i).should('exist');
+  });
+```
+
+<br><br><br>
+
+## Commands
+
+The following commands are available:
+
+| Command               | Description                                                       | CI                 |
+| --------------------- | ----------------------------------------------------------------- | ------------------ |
+| `npm start`           | Creates a development build, running in watch mode                |                    |
+| `npm run build`       | Creates a production build                                        | :heavy_check_mark: |
+| `npm run test`        | Executes all unit tests                                           | :heavy_check_mark: |
+| `npm run test:runner` | Opens the test runner, allowing for specific unit test executions |                    |
