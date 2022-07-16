@@ -4,4 +4,5 @@ node_modules
 # Test
 .nyc_output
 coverage
-cypress
+cypress/screenshots
+cypress/videos
